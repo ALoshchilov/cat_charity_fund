@@ -9,6 +9,8 @@ from app.core.db import get_async_session
 from app.core.user import current_superuser, current_user
 from app.crud import charityproject_crud, donation_crud
 from app.schemas.charityproject import CharityProjectCreate, CharityProjectDB, CharityProjectUpdate
+from app.models import CharityProject, Donation
+from app.services.services import invest_all_donations
 
 router = APIRouter()
 
@@ -22,6 +24,22 @@ async def get_charityprojects(
 ):
     charities = await charityproject_crud.get_multi(session)
     return charities
+
+@router.get(
+    '/opened_projects',
+    response_model=list[CharityProjectDB],
+    response_model_exclude_none=True,
+)
+async def foo(
+    session: AsyncSession = Depends(get_async_session)
+):
+    # charities = await get_not_fully_invested_objects(
+    #     model = CharityProject,
+    #     session=session
+    # )
+    # await project_to_donate(session=session)
+    await invest_all_donations(session=session)
+    return []
 
 @router.post(
     '/',
