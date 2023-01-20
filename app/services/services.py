@@ -6,6 +6,7 @@ from sqlalchemy import asc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
+from app.core.messages import COMMON_ERROR
 from app.models import CharityProject, Donation
 
 
@@ -15,7 +16,7 @@ async def get_not_fully_invested_objects(
 ):
     db_objects = await session.execute(
         select(model).where(
-            model.fully_invested == False
+            model.fully_invested.is_(False)
         ).order_by(asc(model.id))
     )
     return db_objects.scalars().all()
@@ -29,7 +30,7 @@ async def get_total_not_invested(
         func.sum(model.full_amount) -
         func.sum(model.invested_amount),
     ).where(
-        model.fully_invested == False
+        model.fully_invested.is_(False)
     )
     amounts = await session.execute(query)
     return amounts.scalars().first()
@@ -50,7 +51,7 @@ async def close_all_objects(
 ):
     await session.execute(
         update(model).
-        where(model.fully_invested == False).
+        where(model.fully_invested.is_(False)).
         values(
             fully_invested=True,
             invested_amount=model.full_amount,
@@ -120,5 +121,5 @@ async def invest_all_donations(
         session.rollback()
         raise HTTPException(
             status_code=500,
-            detail=f'В ходе обработки транзации возникла непредвиденная ошибка. Подробности {str(error)}',
+            detail=COMMON_ERROR.format(error=str(error)),
         )

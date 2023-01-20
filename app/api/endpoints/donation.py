@@ -3,16 +3,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_async_session
 from app.core.user import current_superuser, current_user
-from app.crud import charityproject_crud, donation_crud
+from app.crud import donation_crud
 from app.models import User
 from app.schemas.donation import DonationCreate, DonationDB
 from app.services.services import invest_all_donations
 
 
-EXCLUDED_FIELDS = ('user_id', 'invested_amount', 'fully_invested', 'close_date',)
+EXCLUDED_FIELDS = (
+    'user_id', 'invested_amount', 'fully_invested', 'close_date',
+)
 
 
 router = APIRouter()
+
 
 @router.get(
     '/',
@@ -25,6 +28,7 @@ async def get_donations(
 ):
     donations = await donation_crud.get_multi(session)
     return donations
+
 
 @router.get(
     '/my',
@@ -40,6 +44,7 @@ async def get_my_donations(
     )
     return my_donations
 
+
 @router.post(
     '/',
     response_model=DonationDB,
@@ -50,7 +55,7 @@ async def post_donation(
     donation: DonationCreate,
     session: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_user)
-):    
+):
     donation = await donation_crud.create(
         donation, session, user
     )

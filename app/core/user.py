@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_async_session
-from app.models.user import User
+from app.models import User
 from app.schemas.user import UserCreate
 
 
