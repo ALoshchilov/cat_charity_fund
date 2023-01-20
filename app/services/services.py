@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Union
 
+from fastapi import HTTPException
 from sqlalchemy import asc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
@@ -19,18 +20,20 @@ async def get_not_fully_invested_objects(
     )
     return db_objects.scalars().all()
 
+
 async def get_total_not_invested(
     model: Union[CharityProject, Donation],
     session: AsyncSession
-):  
+):
     query = select(
-        func.sum(model.full_amount) - 
+        func.sum(model.full_amount) -
         func.sum(model.invested_amount),
     ).where(
         model.fully_invested == False
     )
     amounts = await session.execute(query)
     return amounts.scalars().first()
+
 
 async def close_object(
     object: Union[CharityProject, Donation],
@@ -45,104 +48,77 @@ async def close_all_objects(
     model: Union[CharityProject, Donation],
     session: AsyncSession
 ):
-    query = (
+    await session.execute(
         update(model).
         where(model.fully_invested == False).
         values(
-            fully_invested = True,
-            invested_amount = model.full_amount,
-            close_date = datetime.now()
+            fully_invested=True,
+            invested_amount=model.full_amount,
+            close_date=datetime.now()
         )
     )
-    await session.execute(query)
 
 
-async def invest_all_donations(
+async def distribute_amounts(
+    amount: int,
+    covered_model: Union[CharityProject, Donation],
+    not_covered_model: Union[CharityProject, Donation],
     session: AsyncSession
 ):
-    total_unused_amount = await get_total_not_invested(
-        Donation, session
-    ) or 0
-    total_need_amount = await get_total_not_invested(
-        CharityProject, session
-    ) or 0    
-    print(f'total unused: {total_unused_amount}')
-    print(f'total need: {total_need_amount}')
-    if total_unused_amount == total_need_amount:
-        await close_all_objects(CharityProject,session)
-        await close_all_objects(Donation,session)
-        await session.commit()
-        return None    
-    if total_unused_amount < total_need_amount:
-        projects = await get_not_fully_invested_objects(
-            CharityProject, session
-        )
-        left = total_unused_amount
-        for project in projects:
-            need = project.full_amount - project.invested_amount
-            left = left - need
-            print(f'left: {left}, need: {need}')
-            if left > 0:
-                print(f'Проект {project.name}. Зачислено: {project.full_amount}')
-                await close_object(project, session)
-                continue
-            if not project.invested_amount:
-                amount = project.full_amount - abs(left)
-            else:
-                amount = project.invested_amount + total_unused_amount
-            setattr(project, 'invested_amount', amount)
-            await close_all_objects(Donation,session)
-            print(f'Проект {project.name}. Зачислено: {amount}')
-            break        
-        await session.commit()
-        return None
-    if total_need_amount > total_unused_amount:
-        donations = await get_not_fully_invested_objects(
-            Donation, session
-        )
-        left = total_need_amount
-        for donation in donations:
-            available = donation.full_amount - donation.invested_amount
-            left = left - available
-            print(f'left: {left}, available: {available}')
-            if left > 0:
-                print(f'Из доната {donation.id}. Зачислено: {donation.full_amount}')
-                await close_object(donation, session)
-                continue
-            if not donation.invested_amount:
-                amount = donation.full_amount - abs(left)
-            else:
-                amount = donation.invested_amount + total_need_amount
-            setattr(donation, 'invested_amount', amount)
-            await close_all_objects(CharityProject,session)
-            print(f'Донат {donation.id}. Зачислено: {amount}')
-            break        
-        await session.commit()
-        return None
-
-    
-async def distribute_amounts(pool_amount, primary_model, secondary_model, session):
     """
-    Функция для распределения пулла средств между первичной моделью-получателем
-    и вторичной моделью-донором
+    Функция для распределения средств между объектами модели covered_model,
+    которые могут быть полностью закрыты из имеющихся средств, и объектами
+    модели not_covered_model, средств для полного закрытия которых недостаточно
     """
     objects = await get_not_fully_invested_objects(
-        primary_model, session
+        not_covered_model, session
     )
-    left = pool_amount
+    left = amount
     for object in objects:
-        left = left - object.full_amount - object.invested_amount
-        print(f'left: {left}, available: {object.full_amount - object.invested_amount}')
-        if left > 0:
-            print(f'Из доната {object.id}. Зачислено: {object.full_amount}')
+        left = left - (object.full_amount - object.invested_amount)
+        if left >= 0:
             await close_object(object, session)
             continue
         if not object.invested_amount:
             amount = object.full_amount - abs(left)
         else:
-            amount = object.invested_amount + pool_amount
+            amount = object.invested_amount + amount
         setattr(object, 'invested_amount', amount)
-        await close_all_objects(secondary_model, session)
-        print(f'Донат {object.id}. Зачислено: {amount}')
-        break    
-    pass
+        await close_all_objects(covered_model, session)
+        return
+
+
+async def invest_all_donations(
+    session: AsyncSession
+):
+    try:
+        total_unused_amount = await get_total_not_invested(
+            Donation, session
+        ) or 0
+        total_need_amount = await get_total_not_invested(
+            CharityProject, session
+        ) or 0
+        if total_unused_amount == total_need_amount:
+            await close_all_objects(CharityProject, session)
+            await close_all_objects(Donation, session)
+        elif total_unused_amount < total_need_amount:
+            await distribute_amounts(
+                amount=total_unused_amount,
+                not_covered_model=CharityProject,
+                covered_model=Donation,
+                session=session
+            )
+        else:
+            await distribute_amounts(
+                amount=total_need_amount,
+                not_covered_model=Donation,
+                covered_model=CharityProject,
+                session=session,
+            )
+        await session.commit()
+    except Exception as error:
+        session.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f'В ходе обработки транзации возникла непредвиденная ошибка. Подробности {str(error)}',
+        )

@@ -1,10 +1,11 @@
 from fastapi import Depends
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.user import current_user
 from app.crud.base import CRUDBase
 from app.models import Donation, User
+
 
 class CRUDDonation(CRUDBase):
 
@@ -19,5 +20,6 @@ class CRUDDonation(CRUDBase):
             )
         )
         return my_donations.scalars().all()
+
 
 donation_crud = CRUDDonation(Donation)

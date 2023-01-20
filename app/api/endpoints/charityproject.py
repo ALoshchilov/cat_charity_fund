@@ -33,17 +33,14 @@ async def get_charityprojects(
 async def foo(
     session: AsyncSession = Depends(get_async_session)
 ):
-    # charities = await get_not_fully_invested_objects(
-    #     model = CharityProject,
-    #     session=session
-    # )
-    # await project_to_donate(session=session)
     await invest_all_donations(session=session)
     return []
 
 @router.post(
     '/',
     response_model=CharityProjectDB,
+    dependencies=[Depends(current_superuser)],
+    response_model_exclude_none=True,
 )
 async def create_charityproject(
     charityproject: CharityProjectCreate,
@@ -53,19 +50,20 @@ async def create_charityproject(
     new_project = await charityproject_crud.create(
         charityproject, session
     )
+    await invest_all_donations(session=session)
+    await session.refresh(new_project)
     return new_project
 
 @router.delete(
     '/{project_id}',
     response_model=CharityProjectDB,
-    response_model_exclude_none=True,
+    dependencies=[Depends(current_superuser)],
 )
 async def delete_charityproject(
     project_id: int,
     session: AsyncSession = Depends(get_async_session),
 ):
     project = await check_project_exists(project_id, session)
-    await check_project_not_close(project.id, session)
     await check_project_has_donations(project.id, session)
     project = await charityproject_crud.remove(
         project, session
@@ -75,7 +73,7 @@ async def delete_charityproject(
 @router.patch(
     '/{project_id}',
     response_model=CharityProjectDB,
-    response_model_exclude_none=True,
+    dependencies=[Depends(current_superuser)],
 )
 async def patch_charityproject(
     project_id: int,
@@ -84,9 +82,12 @@ async def patch_charityproject(
 ):
     project = await check_project_exists(project_id, session)
     await check_project_not_close(project.id, session)
-    await check_full_amount_gt_invested(
-        project.id, obj_in.full_amount, session
-    )
+    if obj_in.name is not None:
+        await project_name_exists(obj_in.name, session)
+    if obj_in.full_amount is not None:
+        await check_full_amount_gt_invested(
+            project.id, obj_in.full_amount, session
+        )
     project = await charityproject_crud.update(
         project, obj_in, session
     )

@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User
 
+
 class CRUDBase:
 
     def __init__(self, model):
         self.model = model
-
 
     async def get(
         self,
@@ -24,14 +24,12 @@ class CRUDBase:
         )
         return db_obj.scalars().first()
 
-
     async def get_multi(
         self,
         session: AsyncSession
-    ):        
+    ):
         db_objs = await session.execute(select(self.model))
         return db_objs.scalars().all()
-
 
     async def create(
         self,
@@ -63,7 +61,6 @@ class CRUDBase:
         await session.commit()
         await session.refresh(db_obj)
         return db_obj
-
 
     async def remove(
         self,

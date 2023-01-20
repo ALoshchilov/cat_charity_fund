@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.base import CRUDBase
 from app.models import CharityProject
 
+
 class CRUDCharityProject(CRUDBase):
 
     async def get_project_id_by_name(
@@ -25,7 +26,7 @@ class CRUDCharityProject(CRUDBase):
     ) -> Optional[CharityProject]:
         db_project = await session.execute(
             select(CharityProject.id).where(
-                CharityProject.fully_invested == 0,                
+                CharityProject.fully_invested == 0,
             )
         )
         return db_project.scalars().first()
@@ -52,5 +53,6 @@ class CRUDCharityProject(CRUDBase):
         await session.commit()
         await session.refresh(project)
         return project.full_amount - amount
-    
+
+
 charityproject_crud = CRUDCharityProject(CharityProject)

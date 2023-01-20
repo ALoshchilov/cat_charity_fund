@@ -1,20 +1,20 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Extra, Field, root_validator, validator
+from pydantic import BaseModel, Extra, Field
 from pydantic.types import PositiveInt
-
-from app.core.db import Base
 
 
 class DonationBase(BaseModel):
     comment: Optional[str] = Field(None, min_length=1)
     full_amount: Optional[PositiveInt]
 
+    class Config:
+        extra = Extra.forbid
+
 
 class DonationCreate(DonationBase):
-    comment: str = Field(..., min_length=1)
-    full_amount: Optional[PositiveInt]
+    full_amount: PositiveInt
 
 
 class DonationUpdate(DonationBase):

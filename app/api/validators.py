@@ -13,8 +13,8 @@ async def project_name_exists(
     )
     if project_id is not None:
         raise HTTPException(
-            status_code=422,
-            detail='Проект сбора пожертвований с таким именем уже существует!',
+            status_code=400,
+            detail="Проект с таким именем уже существует!",
         )
 
 async def check_project_exists(
@@ -37,8 +37,8 @@ async def check_project_not_close(
     project = await charityproject_crud.get(id, session)
     if project and project.fully_invested:
         raise HTTPException(
-            status_code=422,
-            detail='Нельзя изменять закрытые проекты сбора пожертвований!',
+            status_code=400,
+            detail="Закрытый проект нельзя редактировать!",
         )
 
 async def check_project_has_donations(
@@ -46,10 +46,10 @@ async def check_project_has_donations(
     session: AsyncSession,
 ):
     project = await charityproject_crud.get(id, session)
-    if project and not project.fully_invested and project.invested_amount > 0:
+    if project and project.invested_amount > 0:
         raise HTTPException(
-            status_code=422,
-            detail='Нельзя изменить проект, в него перечислены пожертвования',
+            status_code=400,
+            detail='В проект были внесены средства, не подлежит удалению!',
         )
 
 async def check_full_amount_gt_invested(
@@ -61,5 +61,5 @@ async def check_full_amount_gt_invested(
     if project and new_full_amount < project.invested_amount:
         raise HTTPException(
             status_code=422,
-            detail='Нельзя задать целевое значение сборов {} меньше, чем уже инвестировано {}',
+            detail='При редактировании проекта должно быть запрещено устанавливать требуемую сумму меньше внесённой.',
         )
