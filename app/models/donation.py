@@ -9,3 +9,7 @@ class Donation(DonationProjectBaseModel):
 
     user_id = Column(Integer, ForeignKey('user.id'))
     comment = Column(Text, nullable=True)
+
+    __mapper_args__ = {
+        'concrete': True
+    }

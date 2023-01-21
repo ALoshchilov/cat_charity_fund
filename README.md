@@ -10,12 +10,12 @@
 Зарегистрированные пользователи могут отправлять пожертвования и просматривать список своих пожертвований.
 
 ## Информация об авторе
-[Александр Лощилов](mailto:loshchilov.aleksandr@gmail.com?subject=[GitHub]Yacut)
+[Александр Лощилов](mailto:loshchilov.aleksandr@gmail.com?subject=[GitHub]QRKot)
 Факультет Python Backend. Когорта 10+.
 
 ## Примененный стек технологий
 * Python
-* Fast-API
+* FastAPI
 * SQLAlchemy
 * Pydantic
 
@@ -59,11 +59,9 @@ python3 -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-При первом запуске проекта создать базу данных, инициировать работу Alembic, провести первичную миграцию:
+При первом запуске проекта создать базу данных и провести первичную миграцию:
 
 ```
-alembic init alembic
-alembic revision --autogenerate -m 'initial'
 alembic upgrade head
 ```
 

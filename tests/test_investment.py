@@ -31,6 +31,7 @@ def test_fully_invested_amount_for_two_projects(user_client, charity_project, ch
     user_client.post('/donation/', json={
         'full_amount': 500000,
     })
+    print(charity_project)
     assert charity_project.fully_invested, test_fully_invested_amount_for_two_projects.__doc__
     assert not charity_project_nunchaku.fully_invested, test_fully_invested_amount_for_two_projects.__doc__
     assert charity_project_nunchaku.invested_amount == 0, test_fully_invested_amount_for_two_projects.__doc__

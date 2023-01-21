@@ -1,10 +1,10 @@
 from typing import Optional
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import asc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User
+from app.models import Donation, User
 
 
 class CRUDBase:
@@ -31,19 +31,32 @@ class CRUDBase:
         db_objs = await session.execute(select(self.model))
         return db_objs.scalars().all()
 
+    async def get_not_closed(
+        self,
+        session: AsyncSession
+    ):
+        db_objects = await session.execute(
+            select(self.model).where(
+                self.model.fully_invested.is_(False)
+            ).order_by(asc(self.model.id))
+        )
+        return db_objects.scalars().all()
+
     async def create(
         self,
         obj_in,
         session: AsyncSession,
-        user: Optional[User] = None
-    ):
+        user: Optional[User] = None,
+        commited: bool = True,
+    ) -> Donation:
         obj_in_data = obj_in.dict()
         if user is not None:
             obj_in_data['user_id'] = user.id
         db_obj = self.model(**obj_in_data)
         session.add(db_obj)
-        await session.commit()
-        await session.refresh(db_obj)
+        if commited:
+            await session.commit()
+            await session.refresh(db_obj)
         return db_obj
 
     async def update(

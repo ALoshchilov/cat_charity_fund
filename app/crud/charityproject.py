@@ -1,5 +1,6 @@
 from typing import Optional
 
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,38 +22,23 @@ class CRUDCharityProject(CRUDBase):
         )
         return db_project_id.scalars().first()
 
-    async def get_first_opened_project(
-        session: AsyncSession,
-    ) -> Optional[CharityProject]:
-        db_project = await session.execute(
-            select(CharityProject.id).where(
-                CharityProject.fully_invested == 0,
-            )
-        )
-        return db_project.scalars().first()
-
-    async def transfer_donation(
-        project_id: int,
-        amount: int,
-        session: AsyncSession,
-    ) -> int:
-        project = await charityproject_crud.get_first_opened_project(session)
-        left_amount = project.full_amount - project.invested_amount
-        if amount < left_amount:
-            setattr(
-                project, 'invested_amount', project.invested_amount + amount
-            )
-        else:
-            setattr(
-                project, 'invested_amount', project.full_amount
-            )
-            setattr(
-                project, 'fully_invested', True
-            )
-        session.add(project)
+    async def update(
+        self,
+        db_obj,
+        obj_in,
+        session: AsyncSession
+    ):
+        obj_data = jsonable_encoder(db_obj)        
+        update_date = obj_in.dict(exclude_unset=True)
+        for field in obj_data:
+            if field in update_date:
+                setattr(db_obj, field, update_date[field])
+        if db_obj.full_amount == db_obj.invested_amount:
+            db_obj = db_obj.close()
+        session.add(db_obj)
         await session.commit()
-        await session.refresh(project)
-        return project.full_amount - amount
+        await session.refresh(db_obj)
+        return db_obj
 
 
 charityproject_crud = CRUDCharityProject(CharityProject)

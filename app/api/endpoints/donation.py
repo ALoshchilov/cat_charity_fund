@@ -3,10 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_async_session
 from app.core.user import current_superuser, current_user
-from app.crud import donation_crud
+from app.crud import charityproject_crud, donation_crud
 from app.models import User
 from app.schemas.donation import DonationCreate, DonationDB
-from app.services.services import invest_all_donations
+from app.services.investments import distribute_amounts
 
 
 EXCLUDED_FIELDS = (
@@ -57,8 +57,18 @@ async def post_donation(
     user: User = Depends(current_user)
 ):
     donation = await donation_crud.create(
-        donation, session, user
+        donation, session, user, commited=True
     )
-    await invest_all_donations(session=session)
+
+    projects = await charityproject_crud.get_not_closed(session)
+    donations = await donation_crud.get_not_closed(session)
+    updated_donations, updated_projects = distribute_amounts(
+        donations=donations, projects=projects
+    )
+    print(donations)
+    session.add_all(updated_donations)
+    session.add_all(updated_projects)
+    await session.commit()
     await session.refresh(donation)
+    print(donation)
     return donation
