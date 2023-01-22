@@ -69,7 +69,7 @@ async def create_charityproject(
     session.add_all(updated_projects)
     await session.commit()
     await session.refresh(new_project)
-    # print(new_project)
+    print(new_project)
     return new_project
 
 
@@ -101,6 +101,7 @@ async def patch_charityproject(
     session: AsyncSession = Depends(get_async_session),
 ):
     project = await check_project_exists(project_id, session)
+
     await check_project_not_close(project.id, session)
     if obj_in.name is not None:
         await project_name_exists(obj_in.name, session)

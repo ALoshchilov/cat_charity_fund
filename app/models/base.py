@@ -20,7 +20,6 @@ class DonationProjectBaseModel(Base):
         ),
     )
 
-    # id = Column(Integer, primary_key=True)
     full_amount = Column(Integer, nullable=False)
     invested_amount = Column(Integer, default=0)
     fully_invested = Column(Boolean, default=False)
@@ -38,8 +37,9 @@ class DonationProjectBaseModel(Base):
 
     def __repr__(self) -> str:
         return (
+            f'Model: {self.__class__.__name__}; '
             f'Object_id: {self.id}; Full_amount: {self.full_amount}; '
             f'invested_amount: {self.invested_amount}; '
             f'Fully_invested: {self.fully_invested}; '
-            f'Create_date: {self.create_date}; Close_date: {self.close_date}'
+            f'Create_date: {self.create_date}; Close_date: {self.close_date};'
         )

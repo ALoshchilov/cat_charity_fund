@@ -13,3 +13,9 @@ class Donation(DonationProjectBaseModel):
     __mapper_args__ = {
         'concrete': True
     }
+
+    def __repr__(self) -> str:
+        return (
+            f'{super(self.__class__, self).__repr__()}'
+            f' UserID: {self.user_id}; Comment: {self.comment}.'
+        )

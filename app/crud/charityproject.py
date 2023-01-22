@@ -28,13 +28,11 @@ class CRUDCharityProject(CRUDBase):
         obj_in,
         session: AsyncSession
     ):
-        obj_data = jsonable_encoder(db_obj)        
+        obj_data = jsonable_encoder(db_obj)
         update_date = obj_in.dict(exclude_unset=True)
         for field in obj_data:
             if field in update_date:
                 setattr(db_obj, field, update_date[field])
-        if db_obj.full_amount == db_obj.invested_amount:
-            db_obj = db_obj.close()
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)

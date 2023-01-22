@@ -6,7 +6,7 @@ from app.models import CharityProject, Donation
 def get_changed_objects(
     objects: list[Union[CharityProject, Donation]],
     amount: int
-):
+) -> list[Union[CharityProject, Donation]]:
     changed_objects = []
     left = amount
     for obj in objects:
@@ -17,9 +17,10 @@ def get_changed_objects(
         if not obj.invested_amount:
             obj.invested_amount = obj.full_amount - abs(left)
         elif obj.full_amount == obj.invested_amount + amount:
-            changed_objects.append(obj.close())
+            obj = obj.close()
         else:
             obj.invested_amount = obj.invested_amount + amount
+        changed_objects.append(obj)
         return changed_objects
 
 
