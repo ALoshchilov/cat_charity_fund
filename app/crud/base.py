@@ -38,7 +38,7 @@ class CRUDBase:
         db_objects = await session.execute(
             select(self.model).where(
                 self.model.fully_invested.is_(False)
-            ).order_by(asc(self.model.id))
+            ).order_by(asc(self.model.create_date))
         )
         return db_objects.scalars().all()
 

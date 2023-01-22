@@ -35,6 +35,12 @@ class DonationProjectBaseModel(Base):
         self.close_date = datetime.now()
         return self
 
+    def invest(self, amount):
+        self.invested_amount = (self.invested_amount or 0) + amount
+        if self.full_amount == self.invested_amount:
+            return self.close()
+        return self
+
     def __repr__(self) -> str:
         return (
             f'Model: {self.__class__.__name__}; '

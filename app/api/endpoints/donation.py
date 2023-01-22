@@ -59,15 +59,8 @@ async def post_donation(
     donation = await donation_crud.create(
         donation, session, user, commited=False
     )
-
     projects = await charityproject_crud.get_not_closed(session)
-    donations = await donation_crud.get_not_closed(session)
-    donations.append(donation)
-    updated_donations, updated_projects = distribute_amounts(
-        donations=donations, projects=projects
-    )
-    session.add_all(updated_donations)
-    session.add_all(updated_projects)
+    session.add_all(distribute_amounts(projects, donation))
     await session.commit()
     await session.refresh(donation)
     return donation

@@ -13,6 +13,7 @@ from app.schemas.charityproject import (
 )
 from app.services.investments import distribute_amounts
 
+
 router = APIRouter()
 
 
@@ -28,24 +29,6 @@ async def get_charityprojects(
     return charities
 
 
-@router.get(
-    '/get_not_fully_invested_objects',
-    response_model=list[CharityProjectDB],
-    response_model_exclude_none=True,
-)
-async def get_opened_charityprojects(
-    session: AsyncSession = Depends(get_async_session)
-):
-    projects = await charityproject_crud.get_not_closed(session)
-    donations = await donation_crud.get_not_closed(session)
-    updated_donations, updated_projects = distribute_amounts(
-        donations=donations, projects=projects
-    )
-    session.add_all(updated_donations)
-    session.add_all(updated_projects)
-    await session.commit()
-
-
 @router.post(
     '/',
     response_model=CharityProjectDB,
@@ -57,20 +40,14 @@ async def create_charityproject(
     session: AsyncSession = Depends(get_async_session)
 ):
     await project_name_exists(charityproject.name, session)
-    new_project = await charityproject_crud.create(
+    project = await charityproject_crud.create(
         charityproject, session, commited=False
     )
-    projects = await charityproject_crud.get_not_closed(session)
     donations = await donation_crud.get_not_closed(session)
-    projects.append(new_project)
-    updated_donations, updated_projects = distribute_amounts(
-        donations=donations, projects=projects
-    )
-    session.add_all(updated_donations)
-    session.add_all(updated_projects)
+    session.add_all(distribute_amounts(donations, project))
     await session.commit()
-    await session.refresh(new_project)
-    return new_project
+    await session.refresh(project)
+    return project
 
 
 @router.delete(

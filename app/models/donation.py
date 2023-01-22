@@ -16,6 +16,6 @@ class Donation(DonationProjectBaseModel):
 
     def __repr__(self) -> str:
         return (
-            f'{super(self.__class__, self).__repr__()}'
-            f' UserID: {self.user_id}; Comment: {self.comment}.'
+            f'{super().__repr__()}'
+            f' UserID: {self.user_id}; Comment: {self.comment[:15]}.'
         )
