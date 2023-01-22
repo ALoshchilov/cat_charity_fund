@@ -69,7 +69,6 @@ async def create_charityproject(
     session.add_all(updated_projects)
     await session.commit()
     await session.refresh(new_project)
-    print(new_project)
     return new_project
 
 

@@ -65,10 +65,8 @@ async def post_donation(
     updated_donations, updated_projects = distribute_amounts(
         donations=donations, projects=projects
     )
-    print(donations)
     session.add_all(updated_donations)
     session.add_all(updated_projects)
     await session.commit()
     await session.refresh(donation)
-    print(donation)
     return donation
