@@ -58,10 +58,11 @@ async def create_charityproject(
 ):
     await project_name_exists(charityproject.name, session)
     new_project = await charityproject_crud.create(
-        charityproject, session, commited=True
+        charityproject, session, commited=False
     )
     projects = await charityproject_crud.get_not_closed(session)
     donations = await donation_crud.get_not_closed(session)
+    projects.append(new_project)
     updated_donations, updated_projects = distribute_amounts(
         donations=donations, projects=projects
     )

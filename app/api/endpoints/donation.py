@@ -57,11 +57,12 @@ async def post_donation(
     user: User = Depends(current_user)
 ):
     donation = await donation_crud.create(
-        donation, session, user, commited=True
+        donation, session, user, commited=False
     )
 
     projects = await charityproject_crud.get_not_closed(session)
     donations = await donation_crud.get_not_closed(session)
+    donations.append(donation)
     updated_donations, updated_projects = distribute_amounts(
         donations=donations, projects=projects
     )

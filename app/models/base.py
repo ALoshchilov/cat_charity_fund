@@ -27,7 +27,7 @@ class DonationProjectBaseModel(Base):
     close_date = Column(DateTime)
 
     def get_remains(self) -> int:
-        return self.full_amount - self.invested_amount
+        return self.full_amount - (self.invested_amount or 0)
 
     def close(self):
         self.fully_invested = True
